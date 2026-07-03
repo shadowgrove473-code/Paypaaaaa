@@ -10,8 +10,16 @@ function checkPassword() {
     const input = document.getElementById('passInput').value.trim();
     const errorDiv = document.getElementById('wrongPass');
 
-    // Явно указываем приведение к Hex-строке в нижнем регистре
+    // Проверяем, загружена ли библиотека вообще
+    if (typeof CryptoJS === 'undefined') {
+        alert("Ошибка: Библиотека CryptoJS не подключена в HTML!");
+        return;
+    }
+
     const inputHash = CryptoJS.SHA256(input).toString(CryptoJS.enc.Hex).toLowerCase();
+
+    // Показываем реальный хэш для отладки
+    alert("Вы ввели: '" + input + "'\nПолученный хэш:\n" + inputHash + "\n\nОжидаемый хэш:\n" + PASSWORD_HASH);
 
     if (inputHash === PASSWORD_HASH) {
         errorDiv.style.display = 'none';
