@@ -10,7 +10,8 @@ function checkPassword() {
     const input = document.getElementById('passInput').value.trim();
     const errorDiv = document.getElementById('wrongPass');
 
-    const inputHash = CryptoJS.SHA256(input).toString();
+    // Явно указываем приведение к Hex-строке в нижнем регистре
+    const inputHash = CryptoJS.SHA256(input).toString(CryptoJS.enc.Hex).toLowerCase();
 
     if (inputHash === PASSWORD_HASH) {
         errorDiv.style.display = 'none';
