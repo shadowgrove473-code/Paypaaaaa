@@ -18,7 +18,6 @@ function checkPassword() {
 
     const inputHash = CryptoJS.SHA256(input).toString(CryptoJS.enc.Hex).toLowerCase();
 
-    // Показываем реальный хэш для отладки
     alert("Вы ввели: '" + input + "'\nПолученный хэш:\n" + inputHash + "\n\nОжидаемый хэш:\n" + PASSWORD_HASH);
 
     if (inputHash === PASSWORD_HASH) {
