@@ -1,4 +1,4 @@
-const PASSWORD_HASH = "96eca3e7e4fea34308b4c3bab2f32b6de6d084109405c03058f1c2e86aa756b";
+const PASSWORD_HASH = "96eca3e7e4fea34308b4c3bab2f32b6de6d084109405c03058f61c2e86aa756b";
 
 const GIST_URL =
     "https://raw.githubusercontent.com/shadowgrove473-code/Paypaaaaa/refs/heads/main/members.txt";
