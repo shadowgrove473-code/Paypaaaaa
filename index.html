@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Обычный генератор премий Majestic RP</title>
+    <title>Majestic RP — Генератор премий</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- CryptoJS для SHA-256 -->
@@ -11,17 +11,47 @@
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #121212;
+            background: #0f0f0f;
             color: #f5f5f5;
             margin: 0;
             padding: 0;
         }
 
-        h2 {
-            margin-top: 0;
+        #lockScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .auth-box {
+            background: #1e1e1e;
+            padding: 25px 30px;
+            border-radius: 10px;
+            width: 350px;
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+        }
+
+        button {
+            background: #1976d2;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2196f3;
         }
 
         .container {
@@ -30,7 +60,6 @@
             background: #1e1e1e;
             padding: 20px 25px;
             border-radius: 10px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
         }
 
         table {
@@ -42,101 +71,11 @@
         th, td {
             border-bottom: 1px solid #333;
             padding: 8px 10px;
-            text-align: left;
-        }
-
-        th {
-            background: #222;
-        }
-
-        .checkbox-col {
-            width: 40px;
-            text-align: center;
-        }
-
-        input[type="number"],
-        input[type="text"],
-        input[type="password"] {
-            background: #111;
-            border: 1px solid #444;
-            color: #f5f5f5;
-            padding: 5px 8px;
-            border-radius: 4px;
-        }
-
-        input::placeholder {
-            color: #777;
-        }
-
-        button {
-            background: #1976d2;
-            border: none;
-            color: #fff;
-            padding: 8px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #2196f3;
         }
 
         .btn-download {
-            margin-top: 15px;
             background: #43a047;
-        }
-
-        .btn-download:hover {
-            background: #4caf50;
-        }
-
-        .mass-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .loader {
-            text-align: center;
-            padding: 15px;
-            color: #bbb;
-        }
-
-        .sync-status {
-            font-size: 13px;
-            padding: 3px 8px;
-            border-radius: 999px;
-            border: 1px solid #555;
-            color: #ccc;
-        }
-
-        /* Экран авторизации */
-        #lockScreen {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-        }
-
-        #lockScreen .auth-box {
-            background: #1e1e1e;
-            padding: 25px 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
-            max-width: 360px;
-            width: 100%;
-        }
-
-        #wrongPass {
-            display: none;
-            margin-top: 10px;
-            color: #ff5252;
-            font-size: 13px;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -145,60 +84,53 @@
 <!-- Экран авторизации -->
 <div id="lockScreen">
     <div class="auth-box">
-        <h2>🔐 Вход в панель</h2>
-        <p>Введите пароль для доступа к защищённому списку.</p>
-        <input type="password" id="passInput" placeholder="Пароль" style="width: 100%; margin-top: 10px;">
-        <button style="margin-top: 10px; width: 100%;" onclick="checkPassword()">Войти в панель</button>
-        <div id="wrongPass">Неверный пароль. Попробуйте ещё раз.</div>
+        <h2>🔐 Доступ ограничен</h2>
+        <p>Введите секретный пароль от панели премий:</p>
+        <input type="password" id="passInput" placeholder="Пароль">
+        <button onclick="checkPassword()">Войти в панель</button>
+        <div id="wrongPass" style="color:#ff5252; display:none;">Неверный пароль</div>
     </div>
 </div>
 
-<!-- Основное содержимое -->
+<!-- Основной интерфейс -->
 <div id="mainContent" style="display:none;">
     <div class="container">
-        <h2>
-            <span>📋 Приемы фракции (Защищенный список)</span>
-            <span class="sync-status" id="syncStatus">Ожидание синхронизации...</span>
-        </h2>
+        <h2>📋 Приемы фракции</h2>
 
         <div class="mass-actions">
-            <span><strong>Массовые действия:</strong></span>
-            <input type="number" id="massAmount" placeholder="Сумма премий" style="width: 130px;">
-            <input type="text" id="massComment" placeholder="Комментарий" style="width: 200px;">
-            <button onclick="applyMassActions()">Применить сумму и коммент</button>
-            <button onclick="loadMembersFromGithub()" style="background: #555; margin-left: auto;">🔄 Обновить список</button>
+            <input type="number" id="massAmount" placeholder="Сумма премий" style="width:130px;">
+            <input type="text" id="massComment" placeholder="Комментарий" style="width:200px;">
+            <button onclick="applyMassActions()">Применить массово</button>
+            <button onclick="loadMembersFromGithub()" style="background:#555;">🔄 Обновить список</button>
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th class="checkbox-col"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
-                    <th>Имя игрока</th>
+                    <th><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                    <th>Имя</th>
                     <th>Static ID</th>
-                    <th>Сумма премий ($)</th>
-                    <th>Комментарии в планшет</th>
+                    <th>Сумма</th>
+                    <th>Комментарий</th>
                 </tr>
             </thead>
             <tbody id="membersTable">
-                <tr><td colspan="5" class="loader">Загрузка актуального списка сотрудников с GitHub...</td></tr>
+                <tr><td colspan="5">Загрузка...</td></tr>
             </tbody>
         </table>
 
-        <button class="btn-download" onclick="downloadTxtFile()">💾 Скачать готовый файл для Majestic (.txt)</button>
+        <button class="btn-download" onclick="downloadTxtFile()">💾 Скачать файл (.txt)</button>
     </div>
 </div>
 
 <script>
-    // Хэш пароля (SHA-256 от твоего реального пароля)
     const PASSWORD_HASH = "94edf28c6ddea3d8f5d7ad3e45e3807f89fbeaf1248b681a47df332deeef1";
 
-    // ССЫЛКА НА ФАЙЛ С СОТРУДНИКАМИ (members.txt) В RAW-ВИДЕ
-    // ОБЯЗАТЕЛЬНО ЗАМЕНИ НА СВОЙ URL!
-    const GIST_URL = "https://raw.githubusercontent.com/shadowgrove473-code/Paypaaaaa/refs/heads/main/members.txt";
+    const GIST_URL =
+        "https://raw.githubusercontent.com/shadowgrove473-code/Paypaaaaa/refs/heads/main/members.txt";
 
     let members = [];
 
-    // Проверка пароля
     function checkPassword() {
         const input = document.getElementById('passInput').value;
         const errorDiv = document.getElementById('wrongPass');
@@ -208,7 +140,7 @@
         if (inputHash === PASSWORD_HASH) {
             document.getElementById('lockScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            loadMembersFromGithub(); // загружаем список только при верном пароле
+            loadMembersFromGithub();
         } else {
             errorDiv.style.display = 'block';
             document.getElementById('passInput').value = '';
@@ -216,106 +148,82 @@
     }
 
     // Вход по Enter
-    document.getElementById('passInput').addEventListener('keypress', function(e) {
+    document.getElementById('passInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') checkPassword();
     });
 
-    // Загрузка списка сотрудников с GitHub
     async function loadMembersFromGithub() {
-        const status = document.getElementById('syncStatus');
         const tbody = document.getElementById('membersTable');
 
-        status.innerText = "Обновление...";
-        status.style.color = "orange";
-        status.style.borderColor = "orange";
-
         try {
-            const response = await fetch(GIST_URL + '?nocache=' + new Date().getTime());
-            if (!response.ok) throw new Error("Ошибка сети");
-
+            const response = await fetch(GIST_URL + "?nocache=" + Date.now());
             const text = await response.text();
-            const lines = text.split(/\r?\n/);
 
             members = [];
 
-            lines.forEach(line => {
-                let cleanLine = line.trim();
-                if (!cleanLine) return;
+            text.split(/\r?\n/).forEach(line => {
+                const clean = line.trim();
+                if (!clean) return;
 
-                let parts = cleanLine.split(',');
-                if (parts.length >= 2) {
-                    members.push({ name: parts[0].trim(), staticId: parts[1].trim() });
-                } else {
-                    members.push({ name: "Сотрудник", staticId: parts[0].trim() });
-                }
+                const parts = clean.split(',');
+                members.push({
+                    name: parts[0].trim(),
+                    staticId: parts[1] ? parts[1].trim() : "0"
+                });
             });
 
             renderTable();
-            status.innerText = "✓ Синхронизировано с GitHub!";
-            status.style.color = "#6AC450";
-            status.style.borderColor = "#6AC450";
-        } catch (error) {
-            console.error(error);
-            status.innerText = "✗ Ошибка загрузки";
-            status.style.color = "#ff5252";
-            status.style.borderColor = "#ff5252";
-            tbody.innerHTML = "<tr><td colspan='5' class='loader' style='color:#ff5252;'>Не удалось загрузить список. Проверьте, переведен ли репозиторий в статус Public.</td></tr>";
+        } catch (err) {
+            tbody.innerHTML =
+                "<tr><td colspan='5' style='color:#ff5252;'>Ошибка загрузки списка</td></tr>";
         }
     }
 
-    // Рендер таблицы
     function renderTable() {
         const tbody = document.getElementById('membersTable');
-        tbody.innerHTML = '';
+        tbody.innerHTML = "";
 
-        if (members.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='loader'>Файл members.txt на GitHub пуст.</td></tr>";
-            return;
-        }
-
-        members.forEach((m, index) => {
+        members.forEach((m, i) => {
             tbody.innerHTML += `
                 <tr>
-                    <td class='checkbox-col'><input type='checkbox' class='user-checkbox' data-index='${index}'></td>
+                    <td><input type="checkbox" class="user-checkbox" data-index="${i}"></td>
                     <td>${m.name}</td>
-                    <td><strong style='color:#00bcd4;'>${m.staticId}</strong></td>
-                    <td><input type='number' class='row-amount' id='amount-${index}' placeholder='0' style='width: 120px;'></td>
-                    <td><input type='text' class='row-comment' id='comment-${index}' placeholder='Примечание' style='width: 200px;'></td>
+                    <td>${m.staticId}</td>
+                    <td><input type="number" id="amount-${i}" placeholder="0"></td>
+                    <td><input type="text" id="comment-${i}" placeholder="Комментарий"></td>
                 </tr>
             `;
         });
     }
 
-    // Выделить всех
     function toggleAll(master) {
-        document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = master.checked);
+        document.querySelectorAll('.user-checkbox')
+            .forEach(cb => cb.checked = master.checked);
     }
 
-    // Массовое применение суммы и комментария
     function applyMassActions() {
-        const massAmount = document.getElementById('massAmount').value;
-        const massComment = document.getElementById('massComment').value;
+        const amount = document.getElementById('massAmount').value;
+        const comment = document.getElementById('massComment').value;
 
         document.querySelectorAll('.user-checkbox').forEach(cb => {
             if (cb.checked) {
-                const idx = cb.getAttribute('data-index');
-                if (massAmount) document.getElementById(`amount-${idx}`).value = massAmount;
-                if (massComment) document.getElementById(`comment-${idx}`).value = massComment;
+                const i = cb.dataset.index;
+                if (amount) document.getElementById(`amount-${i}`).value = amount;
+                if (comment) document.getElementById(`comment-${i}`).value = comment;
             }
         });
     }
 
-    // Генерация TXT-файла для Majestic
     function downloadTxtFile() {
-        let fileContent = 'staticId;amount;comment\r\n';
+        let fileContent = "staticId;amount;comment\r\n";
         let count = 0;
 
         document.querySelectorAll('.user-checkbox').forEach(cb => {
             if (cb.checked) {
-                const idx = cb.getAttribute('data-index');
-                const staticId = members[idx].staticId;
-                const amount = document.getElementById(`amount-${idx}`).value.trim();
-                const comment = document.getElementById(`comment-${idx}`).value.trim() || "Приемка";
+                const i = cb.dataset.index;
+                const staticId = members[i].staticId;
+                const amount = document.getElementById(`amount-${i}`).value.trim();
+                const comment = document.getElementById(`comment-${i}`).value.trim() || "Приемка";
 
                 if (amount && parseInt(amount) > 0) {
                     fileContent += `${staticId};${amount};${comment}\r\n`;
@@ -324,16 +232,17 @@
             }
         });
 
-        if (count === 0) return alert('Выберите галочками нужных людей и заполните сумму выплаты!');
-        if (count > 100) return alert('Внимание! За один раз Majestic принимает не более 100 человек в файле.');
+        if (count === 0) return alert("Выберите людей и укажите сумму!");
+        if (count > 100) return alert("Majestic принимает не более 100 человек за раз.");
 
-        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
+        const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = "Приемка.txt";
         link.click();
         URL.revokeObjectURL(link.href);
     }
 </script>
+
 </body>
 </html>
