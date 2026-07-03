@@ -1,1 +1,220 @@
-const GIST_URL = "https://raw.githubusercontent.com/shadowgrove473-code/Paypaaaaa/refs/heads/main/members.txt?token=GHSAT0AAAAAAEBVYLS4D7GQZR6M4FUYDD6U2SH6P6A"
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Генератор премий Majestic RP</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e24; color: #fff; margin: 0; padding: 30px; }
+        .container { max-width: 950px; margin: 0 auto; background: #2a2a32; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; border-bottom: 2px solid #3f3f4e; padding-bottom: 10px; color: #00bcd4; }
+        .add-form { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; margin-bottom: 25px; background: #33333f; padding: 15px; border-radius: 8px; }
+        .import-box { display: flex; gap: 15px; align-items: center; margin-bottom: 25px; background: #22222b; padding: 15px; border-radius: 8px; border: 1px dashed #4f4f64; }
+        input, select { background: #22222b; border: 1px solid #4f4f64; color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; }
+        input:focus { border-color: #00bcd4; outline: none; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #3f3f4e; }
+        th { background: #33333f; color: #aaa; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        button { background: #00bcd4; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0097a7; }
+        .btn-delete { background: #ff5252; padding: 6px 12px; font-size: 12px; }
+        .btn-delete:hover { background: #d32f2f; }
+        .btn-download { background: #4caf50; width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; }
+        .btn-download:hover { background: #388e3c; }
+        .mass-actions { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #33333f; padding: 12px; border-radius: 8px; }
+        .checkbox-col { width: 40px; text-align: center; }
+        .btn-clear { background: #757575; }
+        .btn-clear:hover { background: #616161; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 Управление премиями фракции Majestic RP</h2>
+    
+    <!-- Импорт готового списка -->
+    <div class="import-box">
+        <strong>📥 Быстрый импорт состава:</strong>
+        <input type="file" id="importFile" accept=".txt,.csv">
+        <small style="color: #aaa;">Выберите старый файл премий или файл со списком ID (разделитель `;` или новая строка)</small>
+    </div>
+
+    <!-- Форма добавления по одному -->
+    <div class="add-form">
+        <input type="text" id="newName" placeholder="Имя игрока (например, Ivan_Ivanov)">
+        <input type="number" id="newStatic" placeholder="Static ID">
+        <button onclick="addMember()">+ Добавить в список</button>
+    </div>
+
+    <!-- Быстрое заполнение премий -->
+    <div class="mass-actions">
+        <span><strong>Для выбранных галочками:</strong></span>
+        <input type="number" id="massAmount" placeholder="Сумма премий" style="width: 130px;">
+        <input type="text" id="massComment" placeholder="Комментарий (например: Премия)" style="width: 200px;">
+        <button onclick="applyMassActions()">Прописать сумму и коммент</button>
+        <button class="btn-clear" onclick="clearAllMembers()" style="margin-left: auto;">❌ Полностью очистить список</button>
+    </div>
+
+    <!-- Таблица состава -->
+    <table>
+        <thead>
+            <tr>
+                <th class="checkbox-col"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                <th>Имя игрока</th>
+                <th>Static ID</th>
+                <th>Сумма премий ($)</th>
+                <th>Комментарий в планшет</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody id="membersTable">
+            <!-- Список генерируется здесь -->
+        </tbody>
+    </table>
+
+    <button class="btn-download" onclick="downloadTxtFile()">📥 Скачать готовый файл для Majestic (.txt)</button>
+</div>
+
+<script>
+    // Загружаем сохраненный список из памяти браузера
+    let members = JSON.parse(localStorage.getItem('majestic_members')) || [];
+
+    function saveToStorage() {
+        localStorage.setItem('majestic_members', JSON.stringify(members));
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('membersTable');
+        tbody.innerHTML = '';
+        
+        if(members.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:30px;">Список пуст. Добавьте игроков вручную или загрузите файл выше.</td></tr>`;
+            return;
+        }
+
+        members.forEach((m, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="checkbox-col"><input type="checkbox" class="user-checkbox" data-index="${index}"></td>
+                    <td>${m.name}</td>
+                    <td><strong style="color:#00bcd4;">${m.staticId}</strong></td>
+                    <td><input type="number" class="row-amount" id="amount-${index}" placeholder="0" style="width: 120px;"></td>
+                    <td><input type="text" class="row-comment" id="comment-${index}" placeholder="Премия" style="width: 200px;"></td>
+                    <td><button class="btn-delete" onclick="deleteMember(${index})">Удалить</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function addMember() {
+        const name = document.getElementById('newName').value.trim() || "Сотрудник";
+        const staticId = document.getElementById('newStatic').value.trim();
+
+        if (!staticId) return alert('Обязательно введите Static ID!');
+        if (members.some(m => m.staticId === staticId)) return alert('Игрок с таким Static ID уже есть в списке!');
+
+        members.push({ name, staticId });
+        saveToStorage();
+        renderTable();
+        
+        document.getElementById('newName').value = '';
+        document.getElementById('newStatic').value = '';
+    }
+
+    function deleteMember(index) {
+        members.splice(index, 1);
+        saveToStorage();
+        renderTable();
+    }
+
+    function clearAllMembers() {
+        if(confirm("Вы уверены, что хотите удалить ВСЕХ игроков из списка?")) {
+            members = [];
+            saveToStorage();
+            renderTable();
+        }
+    }
+
+    function toggleAll(master) {
+        document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+
+    function applyMassActions() {
+        const massAmount = document.getElementById('massAmount').value;
+        const massComment = document.getElementById('massComment').value;
+
+        document.querySelectorAll('.user-checkbox').forEach(cb => {
+            if (cb.checked) {
+                const idx = cb.getAttribute('data-index');
+                if (massAmount) document.getElementById(`amount-${idx}`).value = massAmount;
+                if (massComment) document.getElementById(`comment-${idx}`).value = massComment;
+            }
+        });
+    }
+
+    // Чтение файла для быстрого импорта
+    document.getElementById('importFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const text = evt.target.result;
+            const lines = text.split(/\r?\n/);
+            
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                if (!cleanLine || cleanLine.startsWith('staticId')) return; // пропускаем шапку
+                
+                let parts = cleanLine.split(';');
+                let staticId = parts[0] ? parts[0].trim() : "";
+                
+                if (staticId && !members.some(m => m.staticId === staticId)) {
+                    members.push({
+                        name: "Игрок " + staticId,
+                        staticId: staticId
+                    });
+                }
+            });
+            
+            saveToStorage();
+            renderTable();
+            alert('Игроки успешно импортированы из файла!');
+        };
+        reader.readAsText(file, 'UTF-8');
+    });
+
+    function downloadTxtFile() {
+        let fileContent = "staticId;amount;comment\r\n";
+        let count = 0;
+
+        document.querySelectorAll('.user-checkbox').forEach(cb => {
+            if (cb.checked) {
+                const idx = cb.getAttribute('data-index');
+                const staticId = members[idx].staticId;
+                const amount = document.getElementById(`amount-${idx}`).value.trim();
+                const comment = document.getElementById(`comment-${idx}`).value.trim() || "Премия";
+
+                if (amount && parseInt(amount) > 0) {
+                    fileContent += `${staticId};${amount};${comment}\r\n`;
+                    count++;
+                }
+            }
+        });
+
+        if (count === 0) return alert('Выделите галочками нужных людей и заполните сумму выплаты!');
+        if (count > 100) return alert('Внимание! За один раз Majestic принимает не более 100 человек в файле.');
+
+        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Премии.txt';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    renderTable();
+</script>
+
+</body>
+</html>
