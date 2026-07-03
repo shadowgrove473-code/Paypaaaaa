@@ -2,57 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Генератор премий Majestic RP</title>
+    <title>Общий генератор премий Majestic RP</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #1e1e24; color: #fff; margin: 0; padding: 30px; }
         .container { max-width: 950px; margin: 0 auto; background: #2a2a32; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        h2 { margin-top: 0; border-bottom: 2px solid #3f3f4e; padding-bottom: 10px; color: #00bcd4; }
-        .add-form { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; margin-bottom: 25px; background: #33333f; padding: 15px; border-radius: 8px; }
-        .import-box { display: flex; gap: 15px; align-items: center; margin-bottom: 25px; background: #22222b; padding: 15px; border-radius: 8px; border: 1px dashed #4f4f64; }
-        input, select { background: #22222b; border: 1px solid #4f4f64; color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; }
-        input:focus { border-color: #00bcd4; outline: none; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        h2 { margin-top: 0; border-bottom: 2px solid #3f3f4e; padding-bottom: 10px; color: #00bcd4; display: flex; justify-content: space-between; align-items: center; }
+        .sync-status { font-size: 14px; color: #4caf50; background: rgba(76, 175, 80, 0.1); padding: 5px 12px; border-radius: 20px; border: 1px solid #4caf50; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #3f3f4e; }
         th { background: #33333f; color: #aaa; }
         tr:hover { background: rgba(255,255,255,0.02); }
+        input { background: #22222b; border: 1px solid #4f4f64; color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; }
+        input:focus { border-color: #00bcd4; outline: none; }
         button { background: #00bcd4; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button:hover { background: #0097a7; }
-        .btn-delete { background: #ff5252; padding: 6px 12px; font-size: 12px; }
-        .btn-delete:hover { background: #d32f2f; }
         .btn-download { background: #4caf50; width: 100%; padding: 15px; font-size: 16px; margin-top: 15px; }
         .btn-download:hover { background: #388e3c; }
         .mass-actions { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #33333f; padding: 12px; border-radius: 8px; }
         .checkbox-col { width: 40px; text-align: center; }
-        .btn-clear { background: #757575; }
-        .btn-clear:hover { background: #616161; }
+        .loader { text-align: center; padding: 30px; color: #aaa; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📊 Управление премиями фракции Majestic RP</h2>
-    
-    <!-- Импорт готового списка -->
-    <div class="import-box">
-        <strong>📥 Быстрый импорт состава:</strong>
-        <input type="file" id="importFile" accept=".txt,.csv">
-        <small style="color: #aaa;">Выберите старый файл премий или файл со списком ID (разделитель `;` или новая строка)</small>
-    </div>
-
-    <!-- Форма добавления по одному -->
-    <div class="add-form">
-        <input type="text" id="newName" placeholder="Имя игрока (например, Ivan_Ivanov)">
-        <input type="number" id="newStatic" placeholder="Static ID">
-        <button onclick="addMember()">+ Добавить в список</button>
-    </div>
+    <h2>
+        <span>📊 Премии фракции (Общий список)</span>
+        <span class="sync-status" id="syncStatus">Синхронизация...</span>
+    </h2>
 
     <!-- Быстрое заполнение премий -->
     <div class="mass-actions">
-        <span><strong>Для выбранных галочками:</strong></span>
+        <span><strong>Для выбранных:</strong></span>
         <input type="number" id="massAmount" placeholder="Сумма премий" style="width: 130px;">
-        <input type="text" id="massComment" placeholder="Комментарий (например: Премия)" style="width: 200px;">
+        <input type="text" id="massComment" placeholder="Комментарий" style="width: 200px;">
         <button onclick="applyMassActions()">Прописать сумму и коммент</button>
-        <button class="btn-clear" onclick="clearAllMembers()" style="margin-left: auto;">❌ Полностью очистить список</button>
+        <button onclick="loadMembersFromGitHub()" style="background: #555; margin-left: auto;">🔄 Обновить список</button>
     </div>
 
     <!-- Таблица состава -->
@@ -64,11 +49,10 @@
                 <th>Static ID</th>
                 <th>Сумма премий ($)</th>
                 <th>Комментарий в планшет</th>
-                <th>Действие</th>
             </tr>
         </thead>
         <tbody id="membersTable">
-            <!-- Список генерируется здесь -->
+            <tr><td colspan="5" class="loader">Загрузка актуального списка сотрудников с GitHub...</td></tr>
         </tbody>
     </table>
 
@@ -76,19 +60,59 @@
 </div>
 
 <script>
-    // Загружаем сохраненный список из памяти браузера
-    let members = JSON.parse(localStorage.getItem('majestic_members')) || [];
+    // Публичная ссылка на ваш файл в репозитории Paypaaaaa
+    const GIST_URL = "https://raw.githubusercontent.com/shadowgrove473-code/Paypaaaaa/refs/heads/main/members.txt";
 
-    function saveToStorage() {
-        localStorage.setItem('majestic_members', JSON.stringify(members));
+    let members = [];
+
+    async function loadMembersFromGitHub() {
+        const status = document.getElementById('syncStatus');
+        const tbody = document.getElementById('membersTable');
+        
+        status.innerText = "Обновление...";
+        status.style.color = "orange";
+        status.style.borderColor = "orange";
+
+        try {
+            const response = await fetch(GIST_URL + '?nocache=' + new Date().getTime());
+            if (!response.ok) throw new Error("Ошибка сети");
+            
+            const text = await response.text();
+            const lines = text.split(/\r?\n/);
+            
+            members = []; 
+            
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                if (!cleanLine) return;
+                
+                let parts = cleanLine.split(';');
+                if (parts.length >= 2) {
+                    members.push({ name: parts[0].trim(), staticId: parts[1].trim() });
+                } else {
+                    members.push({ name: "Сотрудник", staticId: parts[0].trim() });
+                }
+            });
+
+            renderTable();
+            status.innerText = "● Синхронизировано с GitHub";
+            status.style.color = "#4caf50";
+            status.style.borderColor = "#4caf50";
+        } catch (error) {
+            console.error(error);
+            status.innerText = "❌ Ошибка загрузки";
+            status.style.color = "#ff5252";
+            status.style.borderColor = "#ff5252";
+            tbody.innerHTML = `<tr><td colspan="5" class="loader" style="color:#ff5252;">Не удалось загрузить список. Убедитесь, что репозиторий Paypaaaaa публичный (Public), а не приватный.</td></tr>`;
+        }
     }
 
     function renderTable() {
         const tbody = document.getElementById('membersTable');
         tbody.innerHTML = '';
         
-        if(members.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:30px;">Список пуст. Добавьте игроков вручную или загрузите файл выше.</td></tr>`;
+        if (members.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="loader">Файл members.txt на GitHub пуст.</td></tr>`;
             return;
         }
 
@@ -100,39 +124,9 @@
                     <td><strong style="color:#00bcd4;">${m.staticId}</strong></td>
                     <td><input type="number" class="row-amount" id="amount-${index}" placeholder="0" style="width: 120px;"></td>
                     <td><input type="text" class="row-comment" id="comment-${index}" placeholder="Премия" style="width: 200px;"></td>
-                    <td><button class="btn-delete" onclick="deleteMember(${index})">Удалить</button></td>
                 </tr>
             `;
         });
-    }
-
-    function addMember() {
-        const name = document.getElementById('newName').value.trim() || "Сотрудник";
-        const staticId = document.getElementById('newStatic').value.trim();
-
-        if (!staticId) return alert('Обязательно введите Static ID!');
-        if (members.some(m => m.staticId === staticId)) return alert('Игрок с таким Static ID уже есть в списке!');
-
-        members.push({ name, staticId });
-        saveToStorage();
-        renderTable();
-        
-        document.getElementById('newName').value = '';
-        document.getElementById('newStatic').value = '';
-    }
-
-    function deleteMember(index) {
-        members.splice(index, 1);
-        saveToStorage();
-        renderTable();
-    }
-
-    function clearAllMembers() {
-        if(confirm("Вы уверены, что хотите удалить ВСЕХ игроков из списка?")) {
-            members = [];
-            saveToStorage();
-            renderTable();
-        }
     }
 
     function toggleAll(master) {
@@ -151,38 +145,6 @@
             }
         });
     }
-
-    // Чтение файла для быстрого импорта
-    document.getElementById('importFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            const text = evt.target.result;
-            const lines = text.split(/\r?\n/);
-            
-            lines.forEach(line => {
-                let cleanLine = line.trim();
-                if (!cleanLine || cleanLine.startsWith('staticId')) return; // пропускаем шапку
-                
-                let parts = cleanLine.split(';');
-                let staticId = parts[0] ? parts[0].trim() : "";
-                
-                if (staticId && !members.some(m => m.staticId === staticId)) {
-                    members.push({
-                        name: "Игрок " + staticId,
-                        staticId: staticId
-                    });
-                }
-            });
-            
-            saveToStorage();
-            renderTable();
-            alert('Игроки успешно импортированы из файла!');
-        };
-        reader.readAsText(file, 'UTF-8');
-    });
 
     function downloadTxtFile() {
         let fileContent = "staticId;amount;comment\r\n";
@@ -213,7 +175,7 @@
         URL.revokeObjectURL(link.href);
     }
 
-    renderTable();
+    loadMembersFromGitHub();
 </script>
 
 </body>
