@@ -21,17 +21,30 @@
         .mass-actions { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; background: #33333f; padding: 12px; border-radius: 8px; }
         .checkbox-col { width: 40px; text-align: center; }
         .loader { text-align: center; padding: 30px; color: #aaa; font-style: italic; }
+        #lockScreen { position: fixed; top:0; left:0; width:100%; height:100%; background:#13131a; display:flex; justify-content:center; align-items:center; z-index:9999; }
+        .lock-box { background:#22222b; padding:40px; border-radius:12px; text-align:center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #3f3f4e; }
+        .lock-box h3 { margin-top:0; color:#00bcd4; margin-bottom:20px; }
+        .lock-box input { width:200px; text-align:center; font-size:18px; letter-spacing:3px; margin-bottom:20px; display:block; margin-left:auto; margin-right:auto; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div id="lockScreen">
+    <div class="lock-box">
+        <h3>🔒 Доступ ограничен</h3>
+        <p style="color:#aaa; font-size:14px; margin-bottom:15px;">Введите пароль от панели премий:</p>
+        <input type="password" id="passInput" placeholder="••••">
+        <button onclick="checkPassword()" style="width:100%;">Войти в панель</button>
+        <div id="wrongPass" style="color:#ff5252; margin-top:15px; font-size:14px; display:none;">Неверный пароль!</div>
+    </div>
+</div>
+
+<div class="container" id="mainContent" style="display: none;">
     <h2>
         <span>📊 Премии фракции (Общий список)</span>
         <span class="sync-status" id="syncStatus">Синхронизация...</span>
     </h2>
 
-    <!-- Быстрое заполнение премий -->
     <div class="mass-actions">
         <span><strong>Для выбранных:</strong></span>
         <input type="number" id="massAmount" placeholder="Сумма премий" style="width: 130px;">
@@ -40,7 +53,6 @@
         <button onclick="loadMembersFromGitHub()" style="background: #555; margin-left: auto;">🔄 Обновить список</button>
     </div>
 
-    <!-- Таблица состава -->
     <table>
         <thead>
             <tr>
@@ -58,13 +70,32 @@
 
     <button class="btn-download" onclick="downloadTxtFile()">📥 Скачать готовый файл для Majestic (.txt)</button>
 </div>
-
 <script>
-    // Публичная ссылка на ваш файл в репозитории Paypaaaaa
-   const GIST_URL = "https://githubusercontent.com";
-
+    // 🔑 НАСТРОЙКА ПАРОЛЯ И ССЫЛКИ НА ВАШ СПИСОК
+    const SITE_PASSWORD = "majestic123"; // Замените majestic123 на любой свой секретный пароль!
+    const GIST_URL = "https://githubusercontent.com";
 
     let members = [];
+
+    // Функция проверки пароля
+    function checkPassword() {
+        const input = document.getElementById('passInput').value;
+        const errorDiv = document.getElementById('wrongPass');
+        
+        if (input === SITE_PASSWORD) {
+            document.getElementById('lockScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            loadMembersFromGitHub(); // Загружаем базу только после верного пароля
+        } else {
+            errorDiv.style.display = 'block';
+            document.getElementById('passInput').value = '';
+        }
+    }
+
+    // Вход по нажатию на клавишу Enter
+    document.getElementById('passInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') checkPassword();
+    });
 
     async function loadMembersFromGitHub() {
         const status = document.getElementById('syncStatus');
@@ -104,7 +135,7 @@
             status.innerText = "❌ Ошибка загрузки";
             status.style.color = "#ff5252";
             status.style.borderColor = "#ff5252";
-            tbody.innerHTML = `<tr><td colspan="5" class="loader" style="color:#ff5252;">Не удалось загрузить список. Убедитесь, что репозиторий Paypaaaaa публичный (Public), а не приватный.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="loader" style="color:#ff5252;">Не удалось загрузить список. Проверьте, переведён ли репозиторий Paypaaaaa в статус Public (Открытый).</td></tr>`;
         }
     }
 
@@ -175,9 +206,6 @@
         link.click();
         URL.revokeObjectURL(link.href);
     }
-
-    loadMembersFromGitHub();
 </script>
-
 </body>
 </html>
